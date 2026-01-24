@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 
+	"k8s.io/apimachinery/pkg/api/operation"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -61,7 +62,8 @@ func (strategy) PrepareForCreate(ctx context.Context, obj runtime.Object) {
 func (strategy) Validate(ctx context.Context, obj runtime.Object) field.ErrorList {
 	cfg := obj.(*api.ConfigMap)
 
-	return validation.ValidateConfigMap(cfg)
+	allErrs := validation.ValidateConfigMap(cfg)
+	return rest.ValidateDeclarativelyWithMigrationChecks(ctx, legacyscheme.Scheme, cfg, nil, allErrs, operation.Create)
 }
 
 // WarningsOnCreate returns warnings for the creation of the given object.
@@ -84,7 +86,8 @@ func (strategy) PrepareForUpdate(ctx context.Context, newObj, oldObj runtime.Obj
 func (strategy) ValidateUpdate(ctx context.Context, newObj, oldObj runtime.Object) field.ErrorList {
 	oldCfg, newCfg := oldObj.(*api.ConfigMap), newObj.(*api.ConfigMap)
 
-	return validation.ValidateConfigMapUpdate(newCfg, oldCfg)
+	allErrs := validation.ValidateConfigMapUpdate(newCfg, oldCfg)
+	return rest.ValidateDeclarativelyWithMigrationChecks(ctx, legacyscheme.Scheme, newCfg, oldCfg, allErrs, operation.Update)
 }
 
 // WarningsOnUpdate returns warnings for the given update.
